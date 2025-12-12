@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">操作日志</h1>
+        <div class="btn-group">
+            <button class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-download"></i> 导出日志
+            </button>
+        </div>
+    </div>
+    
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>用户</th>
+                            <th>操作</th>
+                            <th>详情</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 示例日志数据（实际应从视图函数传递 logs 变量） -->
+                        <tr>
+                            <td>2025-12-04 14:30:00</td>
+                            <td>admin</td>
+                            <td>添加动态列</td>
+                            <td>创建了列 "联系人电话"（字符串类型）</td>
+                        </tr>
+                        <tr>
+                            <td>2025-12-04 14:25:00</td>
+                            <td>admin</td>
+                            <td>创建项目</td>
+                            <td>项目名称："内江市口腔医院医保系统"</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 无日志时显示 -->
+            {% if not logs %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-clock-history fs-1 mb-3"></i>
+                <p>暂无操作日志记录</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

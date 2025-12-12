@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% block title %}{{ project.contract_name }} - 项目管理系统{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{{ project.contract_name }}</h1>
+    <div>
+        <a href="{{ url_for('projects.edit', id=project.id) }}" class="btn btn-primary me-2">
+            <i class="bi bi-pencil"></i> 编辑项目
+        </a>
+        <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> 返回列表
+        </a>
+    </div>
+</div>
+<!-- 项目基本信息 -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">项目基本信息</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <strong>合同项目：</strong> {{ project.contract_name }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>签订日期：</strong> {{ project.sign_date.strftime('%Y-%m-%d') if project.sign_date else '-' }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>合同编号：</strong> {{ project.contract_number }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>合同进度：</strong>
+                        <span class="badge bg-{{ 'success' if project.contract_progress == '已完成' else 'warning' if project.contract_progress == '进行中' else 'secondary' }}">
+                            {{ project.contract_progress }}
+                        </span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>甲方：</strong> {{ project.party_a }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>乙方：</strong> {{ project.party_b }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>丙方：</strong> {{ project.party_c or '-' }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>项目金额：</strong> ¥{{ "%.2f"|format(project.project_amount) }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>发票开具：</strong> {{ project.invoice_status }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>收款情况：</strong> {{ project.payment_status }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>供货情况：</strong> {{ project.supply_status }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>验收情况：</strong> {{ project.acceptance_status }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>维保时间：</strong> {{ project.maintenance_time.strftime('%Y-%m-%d') if project.maintenance_time else '-' }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>商务人员：</strong> {{ project.business_person or '-' }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>项目负责人：</strong> {{ project.project_manager or '-' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 项目备注 -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">项目备注</h5>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addNoteModal">
+                    <i class="bi bi-plus-circle"></i> 添加备注
+                </button>
+            </div>
+            <div class="card-body">
+                {% if notes %}
+                    {% for note in notes %}
+                    <div class="border-bottom pb-3 mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <small class="text-muted">
+                                <i class="bi bi-person"></i> {{ note.author.username if note.author else '未知用户' }}
+                            </small>
+                            <small class="text-muted">
+                                <i class="bi bi-clock"></i> {{ note.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </small>
+                        </div>
+                        <p class="mb-0">{{ note.content }}</p>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center">暂无备注</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <!-- 项目文件 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">项目文件</h5>
+            </div>
+            <div class="card-body">
+                <!-- 合同文件 -->
+                <h6 class="text-primary">合同文件</h6>
+                {% if contract_files %}
+                    <ul class="list-group list-group-flush mb-3">
+                        {% for file in contract_files %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <a href="{{ url_for('static', filename='uploads/projects/' ~ project.id|string ~ '/' ~ file.filename) }}" 
+                               class="text-decoration-none" target="_blank">
+                                <i class="bi bi-file-earmark-text"></i> {{ file.original_filename }}
+                            </a>
+                            <form method="POST" action="{{ url_for('projects.delete_file', file_id=file.id) }}" onsubmit="return confirm('确定要删除这个文件吗？')">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted small mb-3">暂无合同文件</p>
+                {% endif %}
+                
+                <!-- 验收文件 -->
+                <h6 class="text-success">验收文件</h6>
+                {% if acceptance_files %}
+                    <ul class="list-group list-group-flush mb-3">
+                        {% for file in acceptance_files %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <a href="{{ url_for('static', filename='uploads/projects/' ~ project.id|string ~ '/' ~ file.filename) }}" 
+                               class="text-decoration-none" target="_blank">
+                                <i class="bi bi-file-earmark-check"></i> {{ file.original_filename }}
+                            </a>
+                            <form method="POST" action="{{ url_for('projects.delete_file', file_id=file.id) }}" 
+                                  onsubmit="return confirm('确定要删除这个文件吗？')">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted small mb-3">暂无验收文件</p>
+                {% endif %}
+                
+                <!-- 上传文件按钮 -->
+                <div class="mt-3">
+                    <button class="btn btn-sm btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#uploadFileModal">
+                        <i class="bi bi-cloud-upload"></i> 上传文件
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- 项目状态 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">项目状态</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted">创建时间</small>
+                    <p class="mb-0">{{ project.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">最后更新</small>
+                    <p class="mb-0">{{ project.updated_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 添加备注模态框 -->
+<div class="modal fade" id="addNoteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加备注</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('projects.add_note', project_id=project.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">备注内容</label>
+                        <textarea class="form-control" name="content" rows="4" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- 上传文件模态框 -->
+<div class="modal fade" id="uploadFileModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">上传文件</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('projects.upload_file', project_id=project.id) }}" 
+                  enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">文件类型</label>
+                        <select class="form-select" name="file_type" required>
+                            <option value="contract">合同文件</option>
+                            <option value="acceptance">验收文件</option>
+                            <option value="other">其他文件</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">选择文件</label>
+                        <input type="file" class="form-control" name="file" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">上传</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

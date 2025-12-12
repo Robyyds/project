@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}管理员仪表盘{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4">管理员仪表盘</h1>
+    
+    <div class="row">
+        <!-- 系统概览卡片 -->
+        <div class="col-md-3 mb-4">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">总项目数</h5>
+                    <h2 class="display-4">{{ total_projects }}</h2>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a href="{{ url_for('main.index') }}" class="text-white">查看详情</a>
+                    <i class="bi bi-arrow-right"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">总金额</h5>
+                    <h2 class="display-4">¥{{ "%.2f"|format(total_amount) }}</h2>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a href="{{ url_for('main.dashboard') }}" class="text-white">查看统计</a>
+                    <i class="bi bi-arrow-right"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card bg-warning text-dark h-100">
+                <div class="card-body">
+                    <h5 class="card-title">动态列数</h5>
+                    <h2 class="display-4">{{ total_columns }}</h2>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a href="{{ url_for('admin.columns') }}" class="text-dark">管理列</a>
+                    <i class="bi bi-arrow-right"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card bg-danger text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">用户数</h5>
+                    <h2 class="display-4">{{ total_users }}</h2>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a href="{{ url_for('admin.users') }}" class="text-white">管理用户</a>
+                    <i class="bi bi-arrow-right"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

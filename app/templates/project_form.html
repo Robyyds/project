@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} - 项目管理系统{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">{{ title }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">合同项目 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="contract_name" value="{{ project.contract_name if project else '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">签订日期 <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" name="sign_date" value="{{ project.sign_date.strftime('%Y-%m-%d') if project and project.sign_date else '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">合同编号 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="contract_number" value="{{ project.contract_number if project else '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">合同进度</label>
+                            <select class="form-select" name="contract_progress">
+                                <option value="未开始" {% if project and project.contract_progress == '未开始' %}selected{% endif %}>未开始</option>
+                                <option value="进行中" {% if project and project.contract_progress == '进行中' %}selected{% endif %}>进行中</option>
+                                <option value="已完成" {% if project and project.contract_progress == '已完成' %}selected{% endif %}>已完成</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">甲方 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="party_a" value="{{ project.party_a if project else '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">乙方 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="party_b" value="{{ project.party_b if project else '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">丙方</label>
+                            <input type="text" class="form-control" name="party_c" value="{{ project.party_c if project else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">项目金额</label>
+                            <input type="number" class="form-control" name="project_amount" value="{{ project.project_amount if project else '0' }}" step="0.01">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">发票开具情况</label>
+                            <select class="form-select" name="invoice_status">
+                                <option value="未开具" {% if project and project.invoice_status == '未开具' %}selected{% endif %}>未开具</option>
+                                <option value="已开具" {% if project and project.invoice_status == '已开具' %}selected{% endif %}>已开具</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">收款情况</label>
+                            <select class="form-select" name="payment_status">
+                                <option value="未收款" {% if project and project.payment_status == '未收款' %}selected{% endif %}>未收款</option>
+                                <option value="部分收款" {% if project and project.payment_status == '部分收款' %}selected{% endif %}>部分收款</option>
+                                <option value="已收款" {% if project and project.payment_status == '已收款' %}selected{% endif %}>已收款</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">供货情况</label>
+                            <select class="form-select" name="supply_status">
+                                <option value="未供货" {% if project and project.supply_status == '未供货' %}selected{% endif %}>未供货</option>
+                                <option value="部分供货" {% if project and project.supply_status == '部分供货' %}selected{% endif %}>部分供货</option>
+                                <option value="已供货" {% if project and project.supply_status == '已供货' %}selected{% endif %}>已供货</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">验收情况</label>
+                            <select class="form-select" name="acceptance_status">
+                                <option value="未验收" {% if project and project.acceptance_status == '未验收' %}selected{% endif %}>未验收</option>
+                                <option value="部分验收" {% if project and project.acceptance_status == '部分验收' %}selected{% endif %}>部分验收</option>
+                                <option value="已验收" {% if project and project.acceptance_status == '已验收' %}selected{% endif %}>已验收</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">维保时间</label>
+                            <input type="date" class="form-control" name="maintenance_time" value="{{ project.maintenance_time.strftime('%Y-%m-%d') if project and project.maintenance_time else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">商务人员</label>
+                            <input type="text" class="form-control" name="business_person" value="{{ project.business_person if project else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">项目负责人</label>
+                            <input type="text" class="form-control" name="project_manager" value="{{ project.project_manager if project else '' }}">
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('main.index') }}" class="btn btn-secondary">取消</a>
+                                <button type="submit" class="btn btn-primary">保存</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

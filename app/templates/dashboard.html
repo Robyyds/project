@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% block title %}数据仪表盘 - 项目管理系统{% endblock %}
+{% block content %}
+<h1 class="mb-4">数据仪表盘</h1>
+<!-- 基础统计卡片 -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ total_projects }}</h4>
+                        <p>项目总数</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-kanban fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>¥{{ "%.2f"|format(total_amount) }}</h4>
+                        <p>合同总金额</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-currency-yen fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ upcoming_maintenance|length }}</h4>
+                        <p>即将到期维保</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-clock-history fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ payment_stats|length }}</h4>
+                        <p>收款状态种类</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-pie-chart fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 图表区域 -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">项目进度分布</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="progressChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">年度项目趋势</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="yearChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">月度项目统计（{{ now.year }}年）</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="monthChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">收款情况统计</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="paymentChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 即将到期的维保项目 -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">即将到期的维保项目（30天内）</h5>
+    </div>
+    <div class="card-body">
+        {% if upcoming_maintenance %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>项目名称</th>
+                            <th>维保到期日</th>
+                            <th>剩余天数</th>
+                            <th>负责人</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for project in upcoming_maintenance %}
+                        <tr>
+                            <td>{{ project.contract_name }}</td>
+                            <td>{{ project.maintenance_time.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <span class="badge bg-warning">
+				    {{ (project.maintenance_time - now.date()).days }} 天
+
+                                </span>
+                            </td>
+                            <td>{{ project.project_manager or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted text-center">暂无即将到期的维保项目</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// 项目进度分布图
+const progressCtx = document.getElementById('progressChart').getContext('2d');
+new Chart(progressCtx, {
+    type: 'doughnut',
+    data: {
+        labels: [{% for stat in progress_stats %}'{{ stat.contract_progress }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for stat in progress_stats %}{{ stat.count }}{% if not loop.last %},{% endif %}{% endfor %}],
+            backgroundColor: [
+                '#0
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false
+    }
+});
+// 年度项目趋势图
+const yearCtx = document.getElementById('yearChart').getContext('2d');
+new Chart(yearCtx, {
+    type: 'bar',
+    data: {
+        labels: [{% for stat in year_stats %}'{{ stat.year }}年'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: '项目数量',
+            data: [{% for stat in year_stats %}{{ stat.count }}{% if not loop.last %},{% endif %}{% endfor %}],
+            backgroundColor: '#0d6efd'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+// 月度项目统计图
+const monthCtx = document.getElementById('monthChart').getContext('2d');
+const monthData = new Array(12).fill(0);
+{% for stat in month_stats %}
+monthData[{{ stat.month - 1 }}] = {{ stat.count }};
+{% endfor %}
+new Chart(monthCtx, {
+    type: 'line',
+    data: {
+        labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+        datasets: [{
+            label: '项目数量',
+            data: monthData,
+            borderColor: '#198754',
+            backgroundColor: 'rgba(25, 135, 84, 0.1)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+// 收款情况统计图
+const paymentCtx = document.getElementById('paymentChart').getContext('2d');
+new Chart(paymentCtx, {
+    type: 'pie',
+    data: {
+        labels: [{% for stat in payment_stats %}'{{ stat.payment_status }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for stat in payment_stats %}{{ stat.amount or 0 }}{% if not loop.last %},{% endif %}{% endfor %}],
+            backgroundColor: [
+                '#198754', '#ffc107', '#dc3545', '#6c757d'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        let label = context.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        label += '¥' + context.parsed.toLocaleString();
+                        return label;
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

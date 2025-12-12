@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Excel导入 - 项目管理系统{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Excel批量导入项目</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h5 class="alert-heading">导入说明</h5>
+                    <ul class="mb-0">
+                        <li>请上传Excel文件（.xlsx或.xls格式）</li>
+                        <li>必需列：合同项目、签订日期、合同编号、甲方、乙方</li>
+                        <li>可选列：丙方、合同进度、项目金额、发票开具情况、收款情况、供货情况、验收情况、维保时间、商务人员、项目负责人</li>
+                        <li>签订日期和维保时间请使用日期格式（如：2023-01-01）</li>
+                        <li>项目金额请使用数字格式</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-4">
+                    <h5>下载模板</h5>
+                    <a href="{{ url_for('static', filename='templates/project_import_template.xlsx') }}" 
+                       class="btn btn-outline-primary">
+                        <i class="bi bi-download"></i> 下载导入模板
+                    </a>
+                </div>
+                
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">选择Excel文件</label>
+                        <input type="file" class="form-control" id="file" name="file" 
+                               accept=".xlsx,.xls" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-cloud-upload"></i> 开始导入
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

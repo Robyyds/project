@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <!-- 页面标题和操作按钮 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">动态列管理</h1>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addColumnModal">
+            <i class="bi bi-plus-circle"></i> 添加新列
+        </button>
+    </div>
+    <!-- 列列表表格 -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {% if columns %}
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>列名</th>
+                            <th>数据类型</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for column in columns %}
+                        <tr>
+                            <td>{{ column.id }}</td>
+                            <td>{{ column.name }}</td>
+                            <td>
+                                <span class="badge bg-{{ 
+                                    'primary' if column.data_type == 'string' else 
+                                    'success' if column.data_type == 'integer' else 
+                                    'info' if column.data_type == 'date' else 
+                                    'warning' 
+                                }}">
+                                    {{ column.data_type }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if column.is_active %}
+                                    <span class="badge bg-success">启用</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">禁用</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ column.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#editColumnModal{{ column.id }}">
+                                    编辑
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" 
+                                        onclick="confirmDelete({{ column.id }})">
+                                    删除
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-folder-x fs-1 mb-3"></i>
+                <p>暂无动态列数据，请点击"添加新列"创建</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<!-- 添加列模态框 -->
+<div class="modal fade" id="addColumnModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加动态列</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin.add_column') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">列名称 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="name" placeholder="例如：联系人电话" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">数据类型 <span class="text-danger">*</span></label>
+                        <select class="form-select" name="data_type" required>
+                            <option value="string">字符串（文本、电话等）</option>
+                            <option value="integer">整数（数量、金额等）</option>
+                            <option value="date">日期（如：2025-12-01）</option>
+                            <option value="boolean">布尔值（是/否）</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- 编辑列模态框（循环生成每个列的编辑框） -->
+{% for column in columns %}
+<div class="modal fade" id="editColumnModal{{ column.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑列：{{ column.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin.edit_column', column_id=column.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">列名称 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="name" value="{{ column.name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">数据类型 <span class="text-danger">*</span></label>
+                        <select class="form-select" name="data_type" required>
+                            <option value="string" {{ 'selected' if column.data_type == 'string' }}>字符串</option>
+                            <option value="integer" {{ 'selected' if column.data_type == 'integer' }}>整数</option>
+                            <option value="date" {{ 'selected' if column.data_type == 'date' }}>日期</option>
+                            <option value="boolean" {{ 'selected' if column.data_type == 'boolean' }}>布尔值</option>
+                        </select>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="is_active" 
+                               id="isActive{{ column.id }}" {{ 'checked' if column.is_active }}>
+                        <label class="form-check-label" for="isActive{{ column.id }}">
+                            启用该列（禁用后将不在项目表单中显示）
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">更新</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+<!-- 删除确认脚本 -->
+<script>
+function confirmDelete(columnId) {
+    if (confirm('确定要删除该列吗？此操作不可恢复！')) {
+        window.location.href = "{{ url_for('admin.delete_column', column_id=0) }}".replace('0', columnId);
+    }
+}
+</script>
+{% endblock %}
