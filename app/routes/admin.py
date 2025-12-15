@@ -66,7 +66,8 @@ def toggle_column(column_id):
     status = '激活' if column.is_active else '停用'
     flash(f'列已{status}', 'success')
     return redirect(url_for('admin.columns'))
-@admin_bp.route('/columns/delete/<int:column_id>', methods=['POST'])  # ✅ 参数名 column_id
+#@admin_bp.route('/columns/delete/<int:column_id>', methods=['POST'])  # ✅ 参数名 column_id
+@admin_bp.route('/users/delete/<int:user_id>', methods=['GET','POST'])
 @login_required
 @admin_required
 def delete_column(column_id):
@@ -112,7 +113,7 @@ def add_user():
     db.session.commit()
     flash('用户添加成功', 'success')
     return redirect(url_for('admin.users'))
-@admin_bp.route('/users/delete/<int:user_id>')
+@admin_bp.route('/users/delete/<int:user_id>', methods=['POST'])
 @login_required
 @admin_required
 def delete_user(user_id):

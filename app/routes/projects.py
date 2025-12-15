@@ -110,8 +110,8 @@ def edit(id):
 def delete(id):
     """删除项目"""
     project = Project.query.get_or_404(id)
-    if current_user.role != 'admin' and project.created_by != current_user.id:
-        flash('没有权限执行此操作', 'danger')
+    if not current_user.is_admin and project.created_by != current_user.id:
+        flash('无权删除他人项目', 'warning')
         return redirect(url_for('projects.list'))
     
     try:

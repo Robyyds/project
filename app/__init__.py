@@ -3,6 +3,8 @@ from flask_sqlalchemy import SQLAlchemy  # 导入SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from config import config
+from flask_wtf.csrf import CSRFProtect  # 顶部新增
+csrf = CSRFProtect()                   # 创建扩展实例
 # 1. 先初始化数据库对象（关键：必须在导入路由前完成）
 db = SQLAlchemy()  # 创建db对象，供其他模块导入
 login_manager = LoginManager()
@@ -24,6 +26,7 @@ def create_app(config_name='default'):
     db.init_app(app)  # 这里才将db与app关联，不影响之前的导入
     login_manager.init_app(app)
     migrate.init_app(app, db)
+    csrf.init_app(app)
     # 3. 配置登录管理器
     login_manager.login_view = 'auth.login'
     login_manager.login_message = '请先登录'
