@@ -15,14 +15,7 @@
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>用户名</th>
-                            <th>邮箱</th>
-                            <th>角色</th>
-                            <th>创建时间</th>
-                            <th>操作</th>
-                        </tr>
+                        <tr><th>ID</th><th>用户名</th><th>邮箱</th><th>角色</th><th>创建时间</th><th>操作</th></tr>
                     </thead>
                     <tbody>
                         {% for user in users %}
@@ -50,57 +43,33 @@
 <!-- 添加用户模态框 -->
 <div class="modal fade" id="addUserModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content">
-            <form id="addUserForm" method="POST" action="{{ url_for('admin.add_user') }}">
-                <div class="modal-header">
-                    <h5 class="modal-title">添加用户</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
+        <form id="addUserForm" method="POST" action="{{ url_for('admin.add_user') }}">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">添加用户</h5></div>
                 <div class="modal-body">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="mb-3">
-                        <label class="form-label">用户名 <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="username" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">邮箱 <span class="text-danger">*</span></label>
-                        <input type="email" class="form-control" name="email" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">密码 <span class="text-danger">*</span></label>
-                        <input type="password" class="form-control" name="password" required>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="is_admin" id="isAdmin">
-                        <label class="form-check-label" for="isAdmin">授予管理员权限</label>
-                    </div>
+                    <div class="mb-3"><label class="form-label">用户名</label><input type="text" class="form-control" name="username" required></div>
+                    <div class="mb-3"><label class="form-label">邮箱</label><input type="email" class="form-control" name="email" required></div>
+                    <div class="mb-3"><label class="form-label">密码</label><input type="password" class="form-control" name="password" required></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" name="is_admin" value="1"><label class="form-check-label">授予管理员权限</label></div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
                     <button type="submit" class="btn btn-primary">创建</button>
                 </div>
-            </form>
-        </div>
+            </div>
+        </form>
     </div>
 </div>
 
 <script>
-// 统一 CSRF token（全局只需一次）
 const csrfToken = document.querySelector('input[name="csrf_token"]').value;
-
-// 删除用户 AJAX
 document.querySelectorAll('.delete-btn').forEach(btn => {
-    btn.addEventListener('click', async function() {
-        if (!confirm('确定要删除该用户吗？')) return;
-        const url = this.dataset.url;
-        try {
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': csrfToken }
-            });
-            if (res.ok) location.reload();
-            else alert('删除失败');
-        } catch (e) { alert('网络错误'); }
+    btn.addEventListener('click', async () => {
+        if (!confirm('确定删除？')) return;
+        const res = await fetch(btn.dataset.url, {method:'POST', headers:{'X-CSRFToken':csrfToken}});
+        if (res.ok) location.reload();
+        else alert('删除失败');
     });
 });
 </script>

@@ -66,11 +66,12 @@ def toggle_column(column_id):
     status = '激活' if column.is_active else '停用'
     flash(f'列已{status}', 'success')
     return redirect(url_for('admin.columns'))
-#@admin_bp.route('/columns/delete/<int:column_id>', methods=['POST'])  # ✅ 参数名 column_id
-@admin_bp.route('/users/delete/<int:user_id>', methods=['GET','POST'])
+
 @login_required
-@admin_required
-def delete_column(column_id):
+@admin_required    
+# 列删除 —— 函数名、路径、endpoint 全部唯一
+@admin_bp.route('/columns/delete/<int:column_id>', methods=['POST'])
+def delete_column_item(column_id):
     """删除动态列"""
     column = DynamicColumn.query.get_or_404(column_id)
     db.session.delete(column)
@@ -148,3 +149,4 @@ def dashboard():
                          total_amount=total_amount,
                          total_columns=total_columns,
                          total_users=total_users)
+

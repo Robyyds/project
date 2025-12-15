@@ -7,11 +7,15 @@ from app.routes.main import main_bp
 from app.routes.auth import auth_bp
 from app.routes.projects import projects_bp
 from app.routes.admin import admin_bp
+from flask_wtf.csrf import CSRFProtect   # 顶部新增
+csrf = CSRFProtect()
+
 __all__ = ['main_bp', 'auth_bp', 'projects_bp', 'admin_bp']
 db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
 def create_app(config_name='default'):
+    csrf.init_app(app)
     app = Flask(__name__)
     app.config.from_object(config[config_name])
     
