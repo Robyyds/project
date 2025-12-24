@@ -45,66 +45,94 @@ def detail(id):
 def create():
     """创建新项目"""
     if request.method == 'POST':
-        project = Project(
-            contract_name=request.form.get('contract_name'),
-            sign_date=datetime.strptime(request.form.get('sign_date'), '%Y-%m-%d').date() if request.form.get('sign_date') else None,
-            contract_number=request.form.get('contract_number'),
-            contract_progress=request.form.get('contract_progress', '未开始'),
-            party_a=request.form.get('party_a'),
-            party_b=request.form.get('party_b'),
-            party_c=request.form.get('party_c'),
-            project_amount=float(request.form.get('project_amount', 0)),
-            invoice_status=request.form.get('invoice_status', '未开具'),
-            payment_status=request.form.get('payment_status', '未收款'),
-            supply_status=request.form.get('supply_status', '未供货'),
-            acceptance_status=request.form.get('acceptance_status', '未验收'),
-            maintenance_time=datetime.strptime(request.form.get('maintenance_time'), '%Y-%m-%d').date() if request.form.get('maintenance_time') else None,
-            business_person=request.form.get('business_person'),
-            project_manager=request.form.get('project_manager')
-        )
-        db.session.add(project)
-        db.session.commit()
-        flash('项目创建成功！', 'success')
-        return redirect(url_for('projects.detail', id=project.id))
         try:
+            project = Project(
+                contract_name=request.form.get('contract_name'),
+                sign_date=datetime.strptime(request.form.get('sign_date'), '%Y-%m-%d').date() if request.form.get('sign_date') else None,
+                contract_number=request.form.get('contract_number'),
+                contract_progress=request.form.get('contract_progress', '未开始'),
+                party_a=request.form.get('party_a'),
+                party_b=request.form.get('party_b'),
+                party_c=request.form.get('party_c'),
+                project_amount=float(request.form.get('project_amount', 0)),
+                invoice_status=request.form.get('invoice_status', '未开具'),
+                payment_status=request.form.get('payment_status', '未收款'),
+                supply_status=request.form.get('supply_status', '未供货'),
+                acceptance_status=request.form.get('acceptance_status', '未验收'),
+                maintenance_time=datetime.strptime(request.form.get('maintenance_time'), '%Y-%m-%d').date() if request.form.get('maintenance_time') else None,
+                business_person=request.form.get('business_person'),
+                project_manager=request.form.get('project_manager')
+            )
             db.session.add(project)
             db.session.commit()
             flash('项目创建成功！', 'success')
-            return redirect(url_for('projects.index'))
-        except IntegrityError:
-            db.session.rollback()  # 回滚事务（避免事务锁定）
-            flash(f'合同编号 {form.contract_number.data} 已存在，请更换编号', 'danger')        
+            return redirect(url_for('projects.detail', id=project.id))
+        except IntegrityError as e:
+            db.session.rollback()
+            if 'contract_number' in str(e.orig):
+                flash(f'合同编号「{request.form.get("contract_number")}」已存在，请更换', 'danger')
+            else:
+                flash('数据冲突，请检查输入', 'danger')
             return redirect(url_for('projects.create'))
 
-    return render_template('project_form.html', title='创建项目')
+    return render_template('project_form.html', title='创建项目', project=None)
+
 @projects_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit(id):
-    """编辑项目"""
+    """编辑项目 - 仅编辑时允许合同号相同（方案 A 修正版）"""
     project = Project.query.get_or_404(id)
-    
+
     if request.method == 'POST':
-        project.contract_name = request.form.get('contract_name')
-        project.sign_date = datetime.strptime(request.form.get('sign_date'), '%Y-%m-%d').date() if request.form.get('sign_date') else None
-        project.contract_number = request.form.get('contract_number')
-        project.contract_progress = request.form.get('contract_progress')
-        project.party_a = request.form.get('party_a')
-        project.party_b = request.form.get('party_b')
-        project.party_c = request.form.get('party_c')
-        project.project_amount = float(request.form.get('project_amount', 0))
-        project.invoice_status = request.form.get('invoice_status')
-        project.payment_status = request.form.get('payment_status')
-        project.supply_status = request.form.get('supply_status')
-        project.acceptance_status = request.form.get('acceptance_status')
-        project.maintenance_time = datetime.strptime(request.form.get('maintenance_time'), '%Y-%m-%d').date() if request.form.get('maintenance_time') else None
-        project.business_person = request.form.get('business_person')
-        project.project_manager = request.form.get('project_manager')
-        
-        db.session.commit()
-        flash('项目更新成功！', 'success')
-        return redirect(url_for('projects.detail', id=project.id))
-    
-    return render_template('project_form.html', title='编辑项目', project=project)
+        new_number = request.form.get('contract_number', '').strip()
+
+        # 1. 检查新编号是否被其他项目占用（排除当前项目）
+        if new_number != project.contract_number:  # 只有合同编号改变时才检查
+            existing = Project.query.filter(
+                Project.contract_number == new_number,
+                Project.id != id
+            ).first()
+            if existing:
+                flash(f'合同编号「{new_number}」已被其他项目使用，请更换', 'warning')
+                return render_template('project_form.html', project=project, title='编辑项目')
+
+        # 2. 更新项目信息（包含合同编号）
+        try:
+            project.contract_name = request.form.get('contract_name')
+            if request.form.get('sign_date'):
+                project.sign_date = datetime.strptime(request.form.get('sign_date'), '%Y-%m-%d').date()
+            project.contract_number = new_number  # 更新合同编号
+            project.contract_progress = request.form.get('contract_progress')
+            project.party_a = request.form.get('party_a')
+            project.party_b = request.form.get('party_b')
+            project.party_c = request.form.get('party_c') or None
+            project.project_amount = float(request.form.get('project_amount', 0))
+            project.invoice_status = request.form.get('invoice_status')
+            project.payment_status = request.form.get('payment_status')
+            project.supply_status = request.form.get('supply_status')
+            project.acceptance_status = request.form.get('acceptance_status')
+            if request.form.get('maintenance_time'):
+                project.maintenance_time = datetime.strptime(request.form.get('maintenance_time'), '%Y-%m-%d').date()
+            else:
+                project.maintenance_time = None
+            project.business_person = request.form.get('business_person') or None
+            project.project_manager = request.form.get('project_manager') or None
+
+            db.session.commit()
+            flash('项目更新成功！', 'success')
+            return redirect(url_for('projects.detail', id=project.id))
+            
+        except IntegrityError as e:
+            db.session.rollback()
+            if 'contract_number' in str(e.orig):
+                flash(f'合同编号「{new_number}」已存在，请更换', 'danger')
+            else:
+                flash('数据冲突，请检查输入', 'danger')
+            return render_template('project_form.html', project=project, title='编辑项目')
+
+    # GET 回显
+    return render_template('project_form.html', project=project, title='编辑项目')
+
 @projects_bp.route('/delete/<int:id>', methods=['POST'])
 @login_required
 def delete(id):

@@ -119,6 +119,7 @@
                                 <i class="bi bi-file-earmark-text"></i> {{ file.original_filename }}
                             </a>
                             <form method="POST" action="{{ url_for('projects.delete_file', file_id=file.id) }}" onsubmit="return confirm('确定要删除这个文件吗？')">
+							    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -188,6 +189,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST" action="{{ url_for('projects.add_note', project_id=project.id) }}">
+			    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">备注内容</label>
@@ -212,6 +214,7 @@
             </div>
             <form method="POST" action="{{ url_for('projects.upload_file', project_id=project.id) }}" 
                   enctype="multipart/form-data">
+				<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">文件类型</label>

@@ -8,7 +8,11 @@
                 <h4 class="mb-0">{{ title }}</h4>
             </div>
             <div class="card-body">
+                {% if project %}
+                <form method="POST" action="{{ url_for('projects.edit', id=project.id) }}">
+                {% else %}
                 <form method="POST" action="{{ url_for('projects.create') }}">
+                {% endif %}
 				    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -21,7 +25,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">合同编号 <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="contract_number" value="{{ project.contract_number if project else '' }}" required>
+                            <input type="text" class="form-control" name="contract_number" value="{{ request.form.contract_number or project.contract_number }}" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">合同进度</label>

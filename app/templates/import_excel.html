@@ -27,7 +27,8 @@
                     </a>
                 </div>
                 
-                <form method="POST" enctype="multipart/form-data">
+                <form method="POST" action="{{ url_for('projects.import_excel') }}" enctype="multipart/form-data">
+					<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-3">
                         <label for="file" class="form-label">选择Excel文件</label>
                         <input type="file" class="form-control" id="file" name="file" 
