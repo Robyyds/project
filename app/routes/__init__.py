@@ -10,7 +10,7 @@ from app.routes.projects import projects_bp
 from app.routes.admin import admin_bp
 
 __all__ = ['main_bp', 'auth_bp', 'projects_bp', 'admin_bp']
-# 初始化扩展，但不在这里导入蓝图
+# 初始化扩展
 csrf = CSRFProtect()
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -18,10 +18,7 @@ migrate = Migrate()
 
 def create_app(config_name='default'):
     """应用工厂函数"""
-    # 创建 Flask 应用实例
     app = Flask(__name__)
-    
-    # 加载配置
     app.config.from_object(config[config_name])
     
     # 初始化扩展
@@ -54,19 +51,11 @@ def register_blueprints(app):
     from app.routes.projects import projects_bp
     from app.routes.admin import admin_bp
     
-    # 检查是否已经注册过（防止重复注册）
-    if 'main_bp' not in app.blueprints:
-        app.register_blueprint(main_bp)
-    
-    if 'auth_bp' not in app.blueprints:
-        app.register_blueprint(auth_bp, url_prefix='/auth')
-    
-    if 'projects_bp' not in app.blueprints:
-        # 确保只有一个蓝图实例
-        app.register_blueprint(projects_bp, url_prefix='/projects')
-    
-    if 'admin_bp' not in app.blueprints:
-        app.register_blueprint(admin_bp, url_prefix='/admin')
+    # 注册蓝图（不检查是否已存在，因为每次创建应用都是新的）
+    app.register_blueprint(main_bp)
+    app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(projects_bp, url_prefix='/projects')
+    app.register_blueprint(admin_bp, url_prefix='/admin')
 
 def register_error_handlers(app):
     """注册错误处理器"""

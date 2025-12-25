@@ -8,12 +8,13 @@ import pandas as pd
 from io import BytesIO
 from datetime import datetime, timedelta
 from app import db
-from app.models import Project, ProjectNote, ProjectFile, DynamicColumn, ProjectDynamicValue
+from app.models import Project, ProjectNote, ProjectFile, DynamicColumn, ProjectDynamicValue, ProjectStep
 from app.utils.decorators import admin_required
 from sqlalchemy.exc import IntegrityError
 
 
 projects_bp = Blueprint('projects', __name__)
+
 @projects_bp.route('/list', methods=['GET'])
 @login_required
 def list():
@@ -23,6 +24,7 @@ def list():
         page=page, per_page=20, error_out=False
     )
     return render_template('projects/list.html', title='项目列表', projects=projects, pagination=projects)
+
 @projects_bp.route('/detail/<int:id>')
 @login_required
 def detail(id):
@@ -40,6 +42,7 @@ def detail(id):
                          contract_files=contract_files,
                          acceptance_files=acceptance_files,
                          other_files=other_files)
+
 @projects_bp.route('/create', methods=['GET', 'POST'])
 @login_required
 def create():
@@ -64,6 +67,24 @@ def create():
                 project_manager=request.form.get('project_manager')
             )
             db.session.add(project)
+            db.session.commit()
+            
+            # 添加默认步骤
+            default_steps = [
+                ('项目启动', True),
+                ('项目验收', False),
+                ('验收回款', False)
+            ]
+            for i, (title, is_completed) in enumerate(default_steps):
+                step = ProjectStep(
+                    project_id=project.id,
+                    title=title,
+                    is_completed=is_completed,
+                    is_fixed=True,
+                    order=i
+                )
+                db.session.add(step)
+            
             db.session.commit()
             flash('项目创建成功！', 'success')
             return redirect(url_for('projects.detail', id=project.id))
@@ -165,6 +186,7 @@ def delete(id):
         flash(f'删除失败：{str(e)}', 'danger')
     
     return redirect(url_for('projects.list'))
+
 @projects_bp.route('/import_excel', methods=['GET', 'POST'])
 @login_required
 def import_excel():
@@ -246,6 +268,7 @@ def import_excel():
             return redirect(request.url)
     
     return render_template('import_excel.html', title='Excel导入')
+
 @projects_bp.route('/export_excel')
 @login_required
 def export_excel():
@@ -288,25 +311,23 @@ def export_excel():
         return send_file(tmp.name, as_attachment=True, 
                         download_name=f'项目数据_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx')
 
-@projects_bp.route('/<int:project_id>/add_note', methods=['POST'])  # 路由包含 project_id
-@login_required  # 确保登录用户才能添加备注
-def add_note(project_id):  # 接受 project_id 参数
-    # 1. 获取表单提交的备注内容（与模板中 textarea 的 name="content" 对应）
+@projects_bp.route('/<int:project_id>/add_note', methods=['POST'])
+@login_required
+def add_note(project_id):
     """添加项目备注（对应模板中的 add_note 端点）"""
     content = request.form.get('content', '').strip()
     if not content:
         flash('备注内容不能为空', 'danger')
-        return redirect(url_for('projects.detail', id=project_id))  # 重定向回项目详情页
-        # 2. 验证项目是否存在
-    project = Project.query.get_or_404(project_id)  # 如项目不存在返回 404
-            # 3. 创建备注记录（假设 ProjectNote 模型存在，关联 project_id 和 author_id）
+        return redirect(url_for('projects.detail', id=project_id))
+    
+    project = Project.query.get_or_404(project_id)
+    
     note = ProjectNote(
         content=content,
-        project_id=project_id,  # 关联到当前项目
-        created_by=current_user.id  # 关联到当前登录用户（需确保 current_user 已导入）
+        project_id=project_id,
+        created_by=current_user.id
     )
-        
-        # 4. 保存到数据库并处理异常
+    
     try:
         db.session.add(note)
         db.session.commit()
@@ -314,18 +335,17 @@ def add_note(project_id):  # 接受 project_id 参数
     except Exception as e:
         db.session.rollback()
         flash(f'添加备注失败：{str(e)}', 'danger')
-
-        
-            # 5. 重定向回项目详情页
+    
     return redirect(url_for('projects.detail', id=project_id))
+
 # 辅助函数：检查文件类型是否允许上传
 def allowed_file(filename):
     allowed_extensions = {'txt', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'gif'}
     return '.' in filename and \
     filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
-@projects_bp.route('/<int:project_id>/upload_file', methods=['POST'])  # 路由包含 project_id
-@login_required  # 确保登录用户才能上传
+@projects_bp.route('/<int:project_id>/upload_file', methods=['POST'])
+@login_required
 def upload_file(project_id):
     project = Project.query.get_or_404(project_id)
     if 'file' not in request.files:
@@ -337,26 +357,20 @@ def upload_file(project_id):
         flash('未选择文件', 'danger')
         return redirect(url_for('projects.detail', id=project_id))
     
-        # 3. 验证文件类型和保存文件
-    if file and allowed_file(file.filename):  # 需定义 allowed_file 函数（见下文）
-                        # 安全处理文件名（避免特殊字符）
+    if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
-        # 生成存储路径（确保目录存在）
         upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'projects', str(project_id))
-        os.makedirs(upload_folder, exist_ok=True)  # 自动创建不存在的目录
-                # 保存文件到服务器
+        os.makedirs(upload_folder, exist_ok=True)
         file_path = os.path.join(upload_folder, filename)
         file.save(file_path)
         
-                # 4. 记录文件信息到数据库（ProjectFile 模型）
         new_file = ProjectFile(
             project_id=project_id,
             filename=filename,
-            original_filename=file.filename,  # 保留原始文件名
-            file_type=request.form.get('file_type', 'other'),  # 从表单获取文件类型（如 contract/acceptance）
-
+            original_filename=file.filename,
+            file_type=request.form.get('file_type', 'other'),
             file_path=file_path,
-            uploaded_by=current_user.id  # 上传者 ID（当前登录用户）
+            uploaded_by=current_user.id
         )
         db.session.add(new_file)
         db.session.commit()
@@ -364,20 +378,17 @@ def upload_file(project_id):
         flash('文件上传成功！', 'success')
     else:
         flash('不支持的文件类型', 'danger')
-                                    
-    # 5. 重定向回项目详情页
+    
     return redirect(url_for('projects.detail', id=project_id))
 
 @projects_bp.route('/files/delete/<int:file_id>', methods=['POST'])
 @login_required
 def delete_file(file_id):
     """删除项目文件（修复端点缺失错误）"""
-    # 1. 查询文件记录
     file = ProjectFile.query.get_or_404(file_id)
-    project_id = file.project_id  # 获取关联的项目ID
+    project_id = file.project_id
     
     try:
-        # 2. 删除服务器上的文件
         file_path = os.path.join(
             current_app.root_path, 
             'static', 
@@ -389,7 +400,6 @@ def delete_file(file_id):
         if os.path.exists(file_path):
             os.remove(file_path)
         
-        # 3. 删除数据库记录
         db.session.delete(file)
         db.session.commit()
         flash('文件已成功删除', 'success')
@@ -398,5 +408,74 @@ def delete_file(file_id):
         db.session.rollback()
         flash(f'删除失败：{str(e)}', 'danger')
     
-    # 4. 重定向回项目详情页
     return redirect(url_for('projects.detail', id=project_id))
+
+# ================ 项目进度管理路由（只保留一份） ================
+
+@projects_bp.route('/<int:project_id>/steps', methods=['GET'])
+@login_required
+def get_steps(project_id):
+    """获取项目步骤"""
+    steps = ProjectStep.query.filter_by(project_id=project_id).order_by(ProjectStep.order).all()
+    return jsonify([{
+        'id': step.id,
+        'title': step.title,
+        'is_completed': step.is_completed,
+        'is_fixed': step.is_fixed
+    } for step in steps])
+
+@projects_bp.route('/<int:project_id>/progress', methods=['GET'])
+@login_required
+def get_progress(project_id):
+    """获取项目进度"""
+    total_steps = ProjectStep.query.filter_by(project_id=project_id).count()
+    completed_steps = ProjectStep.query.filter_by(project_id=project_id, is_completed=True).count()
+    
+    percent = 0
+    if total_steps > 0:
+        percent = int((completed_steps / total_steps) * 100)
+    
+    return jsonify({
+        'total': total_steps,
+        'completed': completed_steps,
+        'percent': percent
+    })
+
+@projects_bp.route('/<int:project_id>/steps/add', methods=['POST'])
+@login_required
+def add_step(project_id):
+    """添加项目步骤"""
+    title = request.form.get('title', '').strip()
+    if not title:
+        return jsonify({'error': '步骤标题不能为空'}), 400
+    
+    try:
+        max_order = db.session.query(db.func.max(ProjectStep.order)).filter_by(project_id=project_id).scalar() or 0
+        
+        step = ProjectStep(
+            project_id=project_id,
+            title=title,
+            is_fixed=False,
+            order=max_order + 1
+        )
+        db.session.add(step)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'id': step.id})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@projects_bp.route('/steps/toggle/<int:step_id>', methods=['POST'])
+@login_required
+def toggle_step(step_id):
+    """切换步骤完成状态"""
+    step = ProjectStep.query.get_or_404(step_id)
+    
+    try:
+        step.is_completed = not step.is_completed
+        db.session.commit()
+        return jsonify({'success': True, 'is_completed': step.is_completed})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500

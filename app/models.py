@@ -9,7 +9,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128))
+    password_hash = db.Column(db.String(255))
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -139,3 +139,25 @@ class ProjectDynamicValue(db.Model):
     
     def __repr__(self):
         return f'<ProjectDynamicValue {self.id}>'
+class ProjectStep(db.Model):
+    __tablename__ = 'project_steps'
+    __table_args__ = {'extend_existing': True}  # 添加这行
+    
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    is_completed = db.Column(db.Boolean, default=False)
+    is_fixed = db.Column(db.Boolean, default=False)  # 是否是固定步骤
+    order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 关系
+    project = db.relationship('Project', backref=db.backref('steps', lazy=True, order_by='ProjectStep.order'))
+def complete(self):
+    self.is_completed = True
+    self.completed_at = datetime.utcnow()
+
+def uncomplete(self):
+    self.is_completed = False
+    self.completed_at = None
