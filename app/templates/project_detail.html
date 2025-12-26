@@ -24,7 +24,7 @@
             <div id="progressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%;">0%</div>
         </div>
         <ul id="stepList" class="list-group">
-            <li id="emptyTip" class="list-group-item text-muted text-center">暂无步骤，点击上方按钮添加</li>
+            <li id="addStepBtn" class="list-group-item text-muted text-center">暂无步骤，点击上方按钮添加</li>
         </ul>
     </div>
 </div>
@@ -168,7 +168,7 @@ async function loadSteps() {
 
 function renderSteps(steps) {
     const list = document.getElementById('stepList');
-    const empty = document.getElementById('emptyTip');
+    const empty = document.getElementById('addStepBtn');
     if (steps.length === 0) {
         empty.style.display = 'block';
         return;
@@ -286,13 +286,16 @@ async function addStepLocal(title) {
         </div>
     `;
     document.getElementById('stepList').appendChild(li);
-    document.getElementById('emptyTip').style.display = 'none';
+    document.getElementById('addStepBtn').style.display = 'none';
     updateProgressBar();
 }
 
 
 // 首次加载
-loadSteps();
+//$(document).ready(function() {
+    loadSteps();
+//});
+
 </script>
 
 <!-- 添加备注模态框 -->
