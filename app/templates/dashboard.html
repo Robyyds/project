@@ -153,105 +153,77 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// 项目进度分布图
-const progressCtx = document.getElementById('progressChart').getContext('2d');
-new Chart(progressCtx, {
-    type: 'doughnut',
-    data: {
-        labels: [{% for stat in progress_stats %}'{{ stat.contract_progress }}'{% if not loop.last %},{% endif %}{% endfor %}],
-        datasets: [{
-            data: [{% for stat in progress_stats %}{{ stat.count }}{% if not loop.last %},{% endif %}{% endfor %}],
-            backgroundColor: [
-                '#0
-            ]
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false
-    }
-});
-// 年度项目趋势图
-const yearCtx = document.getElementById('yearChart').getContext('2d');
-new Chart(yearCtx, {
-    type: 'bar',
-    data: {
-        labels: [{% for stat in year_stats %}'{{ stat.year }}年'{% if not loop.last %},{% endif %}{% endfor %}],
-        datasets: [{
-            label: '项目数量',
-            data: [{% for stat in year_stats %}{{ stat.count }}{% if not loop.last %},{% endif %}{% endfor %}],
-            backgroundColor: '#0d6efd'
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            y: {
-                beginAtZero: true
-            }
-        }
-    }
-});
-// 月度项目统计图
-const monthCtx = document.getElementById('monthChart').getContext('2d');
-const monthData = new Array(12).fill(0);
-{% for stat in month_stats %}
-monthData[{{ stat.month - 1 }}] = {{ stat.count }};
-{% endfor %}
-new Chart(monthCtx, {
-    type: 'line',
-    data: {
-        labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
-        datasets: [{
-            label: '项目数量',
-            data: monthData,
-            borderColor: '#198754',
-            backgroundColor: 'rgba(25, 135, 84, 0.1)',
-            tension: 0.1
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            y: {
-                beginAtZero: true
-            }
-        }
-    }
-});
-// 收款情况统计图
-const paymentCtx = document.getElementById('paymentChart').getContext('2d');
-new Chart(paymentCtx, {
-    type: 'pie',
-    data: {
-        labels: [{% for stat in payment_stats %}'{{ stat.payment_status }}'{% if not loop.last %},{% endif %}{% endfor %}],
-        datasets: [{
-            data: [{% for stat in payment_stats %}{{ stat.amount or 0 }}{% if not loop.last %},{% endif %}{% endfor %}],
-            backgroundColor: [
-                '#198754', '#ffc107', '#dc3545', '#6c757d'
-            ]
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        let label = context.label || '';
-                        if (label) {
-                            label += ': ';
-                        }
-                        label += '¥' + context.parsed.toLocaleString();
-                        return label;
+document.addEventListener('DOMContentLoaded', function () {
+    // 1. 项目进度分布图
+    const progressCtx = document.getElementById('progressChart').getContext('2d');
+    new Chart(progressCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for stat in progress_stats %}'{{ stat.contract_progress }}'{% if not loop.last %},{% endif %}{% endfor %}{% if not progress_stats %}'暂无数据'{% endif %}],
+            datasets: [{
+                data: [{% for stat in progress_stats %}{{ stat.count }}{% if not loop.last %},{% endif %}{% endfor %}{% if not progress_stats %}0{% endif %}],
+                backgroundColor: ['#0d6efd','#198754','#ffc107','#dc3545','#6c757d']
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    // 2. 年度项目趋势图
+    const yearCtx = document.getElementById('yearChart').getContext('2d');
+    new Chart(yearCtx, {
+        type: 'bar',
+        data: {
+            labels: [{% for stat in year_stats %}'{{ stat.year }}年'{% if not loop.last %},{% endif %}{% endfor %}{% if not year_stats %}'暂无数据'{% endif %}],
+            datasets: [{
+                label: '项目数量',
+                data: [{% for stat in year_stats %}{{ stat.count }}{% if not loop.last %},{% endif %}{% endfor %}{% if not year_stats %}0{% endif %}],
+                backgroundColor: '#0d6efd'
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+    });
+
+    // 3. 月度项目统计图
+    const monthCtx = document.getElementById('monthChart').getContext('2d');
+    const monthData = {% if month_stats %}[{% for s in month_stats %}{{ s.count }}{% if not loop.last %},{% endif %}{% endfor %}]{% else %}[0,0,0,0,0,0,0,0,0,0,0,0]{% endif %};
+    new Chart(monthCtx, {
+        type: 'line',
+        data: {
+            labels: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
+            datasets: [{
+                label: '项目数量',
+                data: monthData,
+                borderColor: '#198754',
+                backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                tension: 0.1
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+    });
+
+    // 4. 收款情况统计图
+    const paymentCtx = document.getElementById('paymentChart').getContext('2d');
+    new Chart(paymentCtx, {
+        type: 'pie',
+        data: {
+            labels: [{% for s in payment_stats %}'{{ s.payment_status }}'{% if not loop.last %},{% endif %}{% endfor %}{% if not payment_stats %}'暂无数据'{% endif %}],
+            datasets: [{
+                data: [{% for s in payment_stats %}{{ s.amount or 0 }}{% if not loop.last %},{% endif %}{% endfor %}{% if not payment_stats %}0{% endif %}],
+                backgroundColor: ['#198754','#ffc107','#dc3545','#6c757d']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ctx.label + ': ¥' + ctx.parsed.toLocaleString()
                     }
                 }
             }
         }
-    }
+    });
 });
 </script>
 {% endblock %}

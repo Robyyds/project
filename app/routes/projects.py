@@ -479,3 +479,78 @@ def toggle_step(step_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+        
+@projects_bp.route('/steps/<int:step_id>', methods=['DELETE'])
+@login_required
+def delete_step(step_id):
+    step = ProjectStep.query.get_or_404(step_id)
+    # 1. 内置保护：标题为「项目验收完成」不可删
+    if step.title == '项目验收完成':
+        return jsonify({'error': '系统固定步骤，不可删除'}), 403
+
+    # 2. 简单权限：只有创建人或管理员可删，自行扩展
+    if step.creator_id != current_user.id and not current_user.is_admin:
+        return jsonify({'error': '无权删除'}), 403
+
+    project_id = step.project_id
+    try:
+        db.session.delete(step)
+        db.session.commit()
+        # 3. 重新计算进度
+        ProjectStep.recalc_progress(project_id)   # 见下方模型方法
+        return jsonify({'result': 'ok'})
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.exception(e)
+        return jsonify({'error': '删除失败'}), 500
+        
+@projects_bp.route('/dashboard')
+@login_required
+def dashboard():
+    from sqlalchemy import func, extract
+    from datetime import datetime, timedelta
+
+    now = datetime.now()
+
+    # 1. 顶部卡片数据
+    total_projects   = Project.query.count()
+    total_amount     = db.session.query(func.sum(Project.project_amount)).scalar() or 0
+    upcoming_maint   = Project.query.filter(
+                            Project.maintenance_time.between(
+                                now.date(),
+                                now.date() + timedelta(days=30)
+                            )).all()
+    payment_kinds    = db.session.query(Project.payment_status).distinct().all()
+
+    # 2. 图表数据
+    progress_stats = db.session.query(
+                        Project.contract_progress,
+                        func.count(Project.id).label('count')
+                     ).group_by(Project.contract_progress).all()
+
+    year_stats = db.session.query(
+                    extract('year', Project.sign_date).label('year'),
+                    func.count(Project.id).label('count')
+                 ).filter(Project.sign_date >= now.replace(year=now.year-4, month=1, day=1))\
+                  .group_by('year').order_by('year').all()
+
+    month_stats = db.session.query(
+                    extract('month', Project.sign_date).label('month'),
+                    func.count(Project.id).label('count')
+                  ).filter(extract('year', Project.sign_date) == now.year)\
+                   .group_by('month').order_by('month').all()
+
+    payment_stats = db.session.query(
+                        Project.payment_status,
+                        func.sum(Project.project_amount).label('amount')
+                      ).group_by(Project.payment_status).all()
+
+    return render_template('dashboard.html',
+                           total_projects=total_projects,
+                           total_amount=total_amount,
+                           upcoming_maintenance=upcoming_maint,
+                           payment_stats=payment_stats,
+                           progress_stats=progress_stats,
+                           year_stats=year_stats,
+                           month_stats=month_stats,
+                           now=now)

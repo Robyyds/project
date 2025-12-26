@@ -165,29 +165,38 @@ async function loadSteps() {
         console.error('loadSteps error:', e);
     }
 }
-
 function renderSteps(steps) {
     const list = document.getElementById('stepList');
     const empty = document.getElementById('addStepBtn');
+
+    /* === 1. 验收完成永远最后 === */
+    steps.sort((a,b)=>{
+        if(a.title==='项目验收完成') return  1;
+        if(b.title==='项目验收完成') return -1;
+        return 0;
+    });
+
     if (steps.length === 0) {
         empty.style.display = 'block';
         return;
     }
     empty.style.display = 'none';
     list.innerHTML = '';
+
     steps.forEach(s => {
         const li = document.createElement('li');
         li.className = 'list-group-item d-flex justify-content-between align-items-center';
         li.innerHTML = `
             <span class="${s.is_completed ? 'text-decoration-line-through text-muted' : ''}">${s.title}</span>
             <div>
-                ${!s.is_fixed ? `<button class="btn btn-sm btn-outline-primary me-2" onclick="toggleStepLocal(${s.id}, this)">${s.is_completed ? '取消完成' : '完成'}</button>` : ''}
-                <span class="badge ${s.is_completed ? 'bg-success' : 'bg-secondary'}">${s.is_completed ? '已完成' : '待完成'}</span>
-            </div>
-        `;
+                ${!s.is_fixed ? `<button class="btn btn-sm btn-outline-primary me-2" onclick="toggleStepLocal(${s.id}, this)">${s.is_completed ? '取消完成' : '完成'}</button>
+                   <button class="btn btn-sm btn-outline-danger me-2" onclick="deleteStepLocal(${s.id}, this)">删除</button>` : ''}
+                <span class="badge ${s.is_completed ? 'bg-success' : 'bg-secondary'}"> ${s.is_completed ? '已完成' : '待完成'}</span>
+            </div>`;
         list.appendChild(li);
     });
 }
+
 
 function createStepLi(step) {
     const li = document.createElement('li');
@@ -200,6 +209,36 @@ function createStepLi(step) {
         </div>
     `;
     return li;
+}
+
+async function deleteStepLocal(stepId, btn) {
+    if (!confirm('确定删除该步骤？')) return;
+    const li = btn.closest('li');
+    li.style.opacity = '0.5';          // 即时反馈
+
+    try {
+        const res = await fetch(`/projects/steps/${stepId}`, {
+            method: 'DELETE',
+            headers: {'X-CSRFToken': csrfToken}
+        });
+        const data = await res.json();
+        if (!res.ok) {              // 403/500 等
+            alert(data.error || '删除失败');
+            li.style.opacity = '1';
+            return;
+        }
+        /* === 成功 === */
+        li.remove();
+        updateProgressBar();        // 重新拉进度
+        /* 如果删光了，显示占位 */
+        if (!document.querySelector('#stepList li:not(#addStepBtn)')) {
+            document.getElementById('addStepBtn').style.display = 'block';
+        }
+    } catch (e) {
+        console.error(e);
+        alert('网络错误');
+        li.style.opacity = '1';
+    }
 }
 
 function updateProgressBar() {
